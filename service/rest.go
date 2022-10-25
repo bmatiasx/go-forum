@@ -92,14 +92,15 @@ func (svc *RestApiService) handleGetPostByPostId(w http.ResponseWriter, r *http.
 	// Given that this project uses gorilla/mux as a router you can access the path params with following code:
 	vars := mux.Vars(r)
 	postId := vars["id"]
-	id, err := strconv.ParseInt(postId, 10, 64)
+	id, err := strconv.ParseUint(postId, 0, 64)
 	if err != nil {
 		fmt.Println("Error while parsing post id")
 	}
 
 	post, err := svc.postRepository.GetById(id)
 	if err != nil {
-		return err.Error()
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
