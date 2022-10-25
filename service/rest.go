@@ -98,6 +98,9 @@ func (svc *RestApiService) handleGetPostByPostId(w http.ResponseWriter, r *http.
 	}
 
 	post, err := svc.postRepository.GetById(id)
+	if err != nil {
+		return err.Error()
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	data, err := json.Marshal(&AckJsonResponse{Message: fmt.Sprintf("Id: %v,  Title: %s, Content: %s, CreationDate: %v", post.Id, post.Title, post.Content, post.CreationDate), Status: http.StatusOK})
