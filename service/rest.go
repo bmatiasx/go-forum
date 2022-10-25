@@ -148,4 +148,25 @@ func (svc *RestApiService) handleAddComment(w http.ResponseWriter, r *http.Reque
 	//  should respond with a json response in a format of `AckJsonResponse` with status code 200 and message 'comment id: COMMENT_ID successfully added' when data was posted successfully.
 	//  e.g. POST /api/posts/comments '{"Id": 123, "PostId": 663, "Comment": "this is a comment", "Author": "blogger", "CreationDate" :"1970-01-01T03:46:40+01:00"}' -->
 	//  '{"Message": "comment id: 123 successfully added", Status: 200}'
+	var comment model.Post
+
+	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
+		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		return
+	}
+	if err := svc.postRepository.Insert(comment); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(&AckJsonResponse{Message: fmt.Sprintf("comment id: %d successfully added", comment.Id), Status: http.StatusOK})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := w.Write(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
