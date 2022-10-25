@@ -9,6 +9,6 @@ import (
 func main() {
 	defaultPort := 8080
 	if err := bootstrap.Init(defaultPort); err != nil {
-		log.Fatalf("Service will be shutdown because error ocurred:  %+v", err.Error())
+		log.Fatalf("Service will be shutdown because apierror ocurred:  %+v", err.Error())
 	}
 }

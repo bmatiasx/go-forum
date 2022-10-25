@@ -91,7 +91,24 @@ func (svc *RestApiService) handleGetPostByPostId(w http.ResponseWriter, r *http.
 
 	// Given that this project uses gorilla/mux as a router you can access the path params with following code:
 	vars := mux.Vars(r)
-	_ = vars["id"]
+	postId := vars["id"]
+	id, err := strconv.ParseInt(postId, 10, 64)
+	if err != nil {
+		fmt.Println("Error while parsing post id")
+	}
+
+	post, err := svc.postRepository.GetById(id)
+
+	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(&AckJsonResponse{Message: fmt.Sprintf("Id: %v,  Title: %s, Content: %s, CreationDate: %v", post.Id, post.Title, post.Content, post.CreationDate), Status: http.StatusOK})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := w.Write(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (svc *RestApiService) handleGetCommentsByPostId(w http.ResponseWriter, r *http.Request) {
