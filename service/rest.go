@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -92,19 +93,21 @@ func (svc *RestApiService) handleGetPostByPostId(w http.ResponseWriter, r *http.
 	// Given that this project uses gorilla/mux as a router you can access the path params with following code:
 	vars := mux.Vars(r)
 	postId := vars["id"]
+	w.Header().Set("Content-Type", "application/json")
+
 	id, err := strconv.ParseUint(postId, 0, 64)
 	if err != nil {
-		fmt.Println("Error while parsing post id")
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("wrong id path variable: %s", postId))
+		return
 	}
 
 	post, err := svc.postRepository.GetById(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		respondWithError(w, http.StatusNotFound, fmt.Sprintf("Post with id: %s does not exist", postId))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	data, err := json.Marshal(&AckJsonResponse{Message: fmt.Sprintf("Id: %v,  Title: %s, Content: %s, CreationDate: %v", post.Id, post.Title, post.Content, post.CreationDate), Status: http.StatusOK})
+	data, err := json.Marshal(post)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -129,7 +132,26 @@ func (svc *RestApiService) handleGetCommentsByPostId(w http.ResponseWriter, r *h
 
 	// Given that this project uses gorilla/mux as a router you can access the path params with following code:
 	vars := mux.Vars(r)
-	_ = vars["id"]
+	postId := vars["id"]
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.ParseUint(postId, 0, 64)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("wrong id path variable: %s", postId))
+		return
+	}
+
+	comments := svc.commentRepository.GetAllByPostId(id)
+
+	data, err := json.Marshal(comments)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := w.Write(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (svc *RestApiService) handleAddComment(w http.ResponseWriter, r *http.Request) {
@@ -148,24 +170,37 @@ func (svc *RestApiService) handleAddComment(w http.ResponseWriter, r *http.Reque
 	//  should respond with a json response in a format of `AckJsonResponse` with status code 200 and message 'comment id: COMMENT_ID successfully added' when data was posted successfully.
 	//  e.g. POST /api/posts/comments '{"Id": 123, "PostId": 663, "Comment": "this is a comment", "Author": "blogger", "CreationDate" :"1970-01-01T03:46:40+01:00"}' -->
 	//  '{"Message": "comment id: 123 successfully added", Status: 200}'
-	var comment model.Post
+	var comment model.Comment
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
-		return
-	}
-	if err := svc.postRepository.Insert(comment); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("could not deserialize comment json payload"))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	if err := svc.commentRepository.Insert(comment); err != nil {
+		if strings.Contains(err.Error(), "exist") {
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Comment with id: %d already exists in the database", comment.Id))
+			return
+		}
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("could not deserialize comment json payload"))
+		return
+	}
+
 	data, err := json.Marshal(&AckJsonResponse{Message: fmt.Sprintf("comment id: %d successfully added", comment.Id), Status: http.StatusOK})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("could not deserialize comment json payload"))
 		return
 	}
 
+	if _, err := w.Write(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	data, _ := json.Marshal(&AckJsonResponse{Message: message, Status: code})
+	w.WriteHeader(code)
 	if _, err := w.Write(data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

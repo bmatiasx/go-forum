@@ -40,7 +40,11 @@ func (c *CommentRepository) Insert(comment model.Comment) error {
 	// TODO: Insert should insert a comment passed as an argument to the persistent in memory repository.
 	//  The method should return an apierror as an instance of `CommentAlreadyExistsError` struct
 	//  when a comment with given id already exists in the repository.
-	err := CommentAlreadyExistsError{}
+	//err := CommentAlreadyExistsError{}
+
+	if comment.Id == 0 || comment.Comment == "" || comment.PostId == 0 || comment.Author == "" || comment.CreationDate.IsZero() {
+		return errors.New(fmt.Sprint("Error: comment is missing fields"))
+	}
 
 	if len(c.repository) == 0 {
 		c.repository = append(c.repository, comment)
@@ -49,8 +53,8 @@ func (c *CommentRepository) Insert(comment model.Comment) error {
 
 	for _, cm := range c.repository {
 		if comment.Id == cm.Id {
-			err.id = cm.Id
-			return errors.New(err.Error())
+			err := CommentAlreadyExistsError{id: cm.Id}
+			return err
 		}
 		c.repository = append(c.repository, comment)
 	}
@@ -75,7 +79,7 @@ func (c *CommentRepository) GetById(id uint64) (*model.Comment, error) {
 		err := CommentNotFoundError{
 			id: id,
 		}
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 
 	return found, nil
@@ -138,7 +142,7 @@ func (c *PostRepository) Insert(post model.Post) error {
 	for _, p := range c.repository {
 		if post.Id == p.Id {
 			err.id = post.Id
-			return errors.New(err.Error())
+			return err
 		}
 		c.repository = append(c.repository, post)
 	}
@@ -162,7 +166,7 @@ func (c *PostRepository) GetById(id uint64) (*model.Post, error) {
 		err := PostNotFoundError{
 			id: id,
 		}
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 
 	return found, nil
