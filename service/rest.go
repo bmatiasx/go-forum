@@ -61,19 +61,19 @@ func (svc *RestApiService) handleAddPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := svc.postRepository.Insert(post); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	data, err := json.Marshal(&AckJsonResponse{Message: fmt.Sprintf("post id: %d successfully added", post.Id), Status: http.StatusOK})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if _, err := w.Write(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 }
 
@@ -109,12 +109,12 @@ func (svc *RestApiService) handleGetPostByPostId(w http.ResponseWriter, r *http.
 
 	data, err := json.Marshal(post)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if _, err := w.Write(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 }
 
@@ -145,12 +145,12 @@ func (svc *RestApiService) handleGetCommentsByPostId(w http.ResponseWriter, r *h
 
 	data, err := json.Marshal(comments)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if _, err := w.Write(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 }
 

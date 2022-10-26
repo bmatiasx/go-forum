@@ -40,7 +40,6 @@ func (c *CommentRepository) Insert(comment model.Comment) error {
 	// TODO: Insert should insert a comment passed as an argument to the persistent in memory repository.
 	//  The method should return an apierror as an instance of `CommentAlreadyExistsError` struct
 	//  when a comment with given id already exists in the repository.
-	//err := CommentAlreadyExistsError{}
 
 	if comment.Id == 0 || comment.Comment == "" || comment.PostId == 0 || comment.Author == "" || comment.CreationDate.IsZero() {
 		return errors.New(fmt.Sprint("Error: comment is missing fields"))
@@ -71,18 +70,16 @@ func (c *CommentRepository) GetById(id uint64) (*model.Comment, error) {
 	for _, c := range c.repository {
 		if c.Id == id {
 			found = &c
-			break
+			return found, nil
 		}
 	}
 
 	if found == nil {
-		err := CommentNotFoundError{
-			id: id,
-		}
+		err := CommentNotFoundError{id: id}
 		return nil, err
 	}
 
-	return found, nil
+	return nil, nil
 }
 
 func (c *CommentRepository) GetAllByPostId(id uint64) []model.Comment {
@@ -132,7 +129,6 @@ func (c *PostRepository) Insert(post model.Post) error {
 	// TODO:  Insert should insert a post passed as an argument to the persistent in memory repository.
 	//  The method should return an apierror as an instance of `PostAlreadyExistsError` struct
 	//  when a post with given id already exists in the repository.
-	err := PostAlreadyExistsError{}
 
 	if len(c.repository) == 0 {
 		c.repository = append(c.repository, post)
@@ -141,7 +137,7 @@ func (c *PostRepository) Insert(post model.Post) error {
 
 	for _, p := range c.repository {
 		if post.Id == p.Id {
-			err.id = post.Id
+			err := PostAlreadyExistsError{id: post.Id}
 			return err
 		}
 		c.repository = append(c.repository, post)
@@ -158,16 +154,14 @@ func (c *PostRepository) GetById(id uint64) (*model.Post, error) {
 	for _, c := range c.repository {
 		if c.Id == id {
 			found = &c
-			break
+			return found, nil
 		}
 	}
 
 	if found == nil {
-		err := PostNotFoundError{
-			id: id,
-		}
+		err := PostNotFoundError{id: id}
 		return nil, err
 	}
 
-	return found, nil
+	return nil, nil
 }
